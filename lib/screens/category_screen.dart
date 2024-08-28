@@ -6,9 +6,55 @@ import '../widgets/income_form.dart';
 import '../screens/income_screen.dart';
 import '../models/database_provider.dart';
 
-class CategoryScreen extends StatelessWidget {
+class CategoryScreen extends StatefulWidget {
   const CategoryScreen({super.key});
   static const name = '/category_screen'; // for routes
+
+  @override
+  _CategoryScreenState createState() => _CategoryScreenState();
+}
+
+class _CategoryScreenState extends State<CategoryScreen> {
+  String _currentExpenseType = 'Today\'s Expenses';
+  double _currentExpenseValue = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _updateExpenseValue();
+  }
+
+  void _updateExpenseValue() {
+    final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
+    final today = DateTime.now();
+
+    setState(() {
+      if (_currentExpenseType == 'Today\'s Expenses') {
+        _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
+      } else if (_currentExpenseType == 'Weekly Expenses') {
+        _currentExpenseValue = dbProvider.calculateWeekExpenses().fold(0.0, (sum, day) => sum + day['amount']);
+      } else if (_currentExpenseType == 'Monthly Expenses') {
+        _currentExpenseValue = dbProvider.calculateMonthlyExpenses(today.month, today.year);
+      } else if (_currentExpenseType == 'Yearly Expenses') {
+        _currentExpenseValue = dbProvider.calculateYearlyExpenses(today.year);
+      }
+    });
+  }
+
+  void _toggleExpenseType() {
+    setState(() {
+      if (_currentExpenseType == 'Today\'s Expenses') {
+        _currentExpenseType = 'Weekly Expenses';
+      } else if (_currentExpenseType == 'Weekly Expenses') {
+        _currentExpenseType = 'Monthly Expenses';
+      } else if (_currentExpenseType == 'Monthly Expenses') {
+        _currentExpenseType = 'Yearly Expenses';
+      } else if (_currentExpenseType == 'Yearly Expenses') {
+        _currentExpenseType = 'Today\'s Expenses';
+      }
+      _updateExpenseValue();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,22 +85,42 @@ class CategoryScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Consumer<DatabaseProvider>(
-              builder: (context, dbProvider, child) => Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  color: Colors.grey[200], // Light grey background
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              builder: (context, dbProvider, child) {
+                return Row(
                   children: [
-                    Text(
-                      'Total Expenses: ₱ ${dbProvider.totalExpenses.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: _toggleExpenseType, // Toggle the expense type on tap
+                        child: Container(
+                          padding: const EdgeInsets.all(8.0),
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200], // Light grey background
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _currentExpenseType,
+                                style: const TextStyle(
+                                  fontSize: 12, // Smaller font size
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4), // Small space between the label and value
+                              Text(
+                                '₱ ${_currentExpenseValue.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  fontSize: 24, // Larger font size for the value
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
+                    const SizedBox(width: 16), // Add space between the container and button
                     ElevatedButton(
                       onPressed: () {
                         showModalBottomSheet(
@@ -71,8 +137,8 @@ class CategoryScreen extends StatelessWidget {
                       child: const Icon(Icons.add, color: Colors.white),
                     ),
                   ],
-                ),
-              ),
+                );
+              },
             ),
           ),
           const Expanded(child: CategoryFetcher()), // Ensure this is expanded to take up available space

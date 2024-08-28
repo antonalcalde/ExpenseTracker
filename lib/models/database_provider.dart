@@ -31,7 +31,7 @@ class DatabaseProvider with ChangeNotifier {
   double get totalExpenses {
     return _categories.fold(
       0.0,
-          (previousValue, element) => previousValue + element.totalAmount,
+      (previousValue, element) => previousValue + element.totalAmount,
     );
   }
 
@@ -104,7 +104,7 @@ class DatabaseProvider with ChangeNotifier {
         final converted = List<Map<String, dynamic>>.from(data);
         List<ExpenseCategory> nList = List.generate(
           converted.length,
-              (index) => ExpenseCategory.fromString(converted[index]),
+          (index) => ExpenseCategory.fromString(converted[index]),
         );
         _categories = nList;
         return _categories;
@@ -113,10 +113,10 @@ class DatabaseProvider with ChangeNotifier {
   }
 
   Future<void> updateCategory(
-      String category,
-      int nEntries,
-      double nTotalAmount,
-      ) async {
+    String category,
+    int nEntries,
+    double nTotalAmount,
+  ) async {
     final db = await database;
     await db.transaction((txn) async {
       await txn.update(
@@ -178,7 +178,7 @@ class DatabaseProvider with ChangeNotifier {
         final converted = List<Map<String, dynamic>>.from(data);
         List<Expense> nList = List.generate(
           converted.length,
-              (index) => Expense.fromString(converted[index]),
+          (index) => Expense.fromString(converted[index]),
         );
         _expenses = nList;
         return _expenses;
@@ -193,7 +193,7 @@ class DatabaseProvider with ChangeNotifier {
         final converted = List<Map<String, dynamic>>.from(data);
         List<Expense> nList = List.generate(
           converted.length,
-              (index) => Expense.fromString(converted[index]),
+          (index) => Expense.fromString(converted[index]),
         );
         _expenses = nList;
         return _expenses;
@@ -217,7 +217,7 @@ class DatabaseProvider with ChangeNotifier {
   double calculateTotalExpenses() {
     return _categories.fold(
       0.0,
-          (previousValue, element) => previousValue + element.totalAmount,
+      (previousValue, element) => previousValue + element.totalAmount,
     );
   }
 
@@ -239,6 +239,43 @@ class DatabaseProvider with ChangeNotifier {
       data.add({'day': weekDay, 'amount': total});
     }
     return data;
+  }
+
+  // Method to calculate daily expenses
+  double calculateDailyExpenses(DateTime date) {
+    double total = 0.0;
+    final dayExpenses = _expenses.where((expense) =>
+        expense.date.year == date.year &&
+        expense.date.month == date.month &&
+        expense.date.day == date.day);
+
+    for (final expense in dayExpenses) {
+      total += expense.amount;
+    }
+    return total;
+  }
+
+  // Method to calculate monthly expenses
+  double calculateMonthlyExpenses(int month, int year) {
+    double total = 0.0;
+    final monthExpenses = _expenses.where((expense) =>
+        expense.date.year == year && expense.date.month == month);
+
+    for (final expense in monthExpenses) {
+      total += expense.amount;
+    }
+    return total;
+  }
+
+  // Method to calculate yearly expenses
+  double calculateYearlyExpenses(int year) {
+    double total = 0.0;
+    final yearExpenses = _expenses.where((expense) => expense.date.year == year);
+
+    for (final expense in yearExpenses) {
+      total += expense.amount;
+    }
+    return total;
   }
 
   Future<void> addIncome(Income income) async {
@@ -265,24 +302,72 @@ class DatabaseProvider with ChangeNotifier {
     final db = await database;
     await db.transaction((txn) async {
       await txn.delete(iTable, where: 'id == ?', whereArgs: [id]).then((_) {
-        _incomes.removeWhere((income) => income.id == id);
+        _incomes.removeWhere((element) => element.id == id);
         notifyListeners();
       });
     });
   }
 
-  Future<void> fetchIncomes() async {
+  Future<List<Income>> fetchIncomes() async {
     final db = await database;
     return await db.transaction((txn) async {
       return await txn.query(iTable).then((data) {
         final converted = List<Map<String, dynamic>>.from(data);
-        List<Income> newList = List.generate(
+        List<Income> nList = List.generate(
           converted.length,
-              (index) => Income.fromString(converted[index]),
+          (index) => Income.fromString(converted[index]),
         );
-        _incomes = newList;
+        _incomes = nList;
         return _incomes;
       });
+    });
+  }
+
+  double calculateTotalIncomes() {
+    return _incomes.fold(
+      0.0,
+      (previousValue, element) => previousValue + element.amount,
+    );
+  }
+
+  Map<String, dynamic> calculateTotalIncomesByMonth(int month, int year) {
+    double total = 0.0;
+    int count = 0;
+
+    for (final income in _incomes) {
+      if (income.date.month == month && income.date.year == year) {
+        total += income.amount;
+        count++;
+      }
+    }
+
+    return {'count': count, 'totalAmount': total};
+  }
+
+  double calculateNetSavings() {
+    return calculateTotalIncomes() - calculateTotalExpenses();
+  }
+
+  Future<void> deleteAllData() async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(eTable);
+      await txn.delete(cTable);
+      await txn.delete(iTable);
+
+      // Re-insert default categories
+      for (int i = 0; i < icons.length; i++) {
+        await txn.insert(cTable, {
+          'title': icons.keys.toList()[i],
+          'entries': 0,
+          'totalAmount': (0.0).toString(),
+        });
+      }
+
+      _expenses.clear();
+      _categories.clear();
+      _incomes.clear();
+      notifyListeners();
     });
   }
 }

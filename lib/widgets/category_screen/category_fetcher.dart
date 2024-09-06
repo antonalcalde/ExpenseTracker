@@ -41,9 +41,9 @@ class _CategoryFetcherState extends State<CategoryFetcher> {
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: Column(
                 children: [
-                  const SizedBox(
+                  SizedBox(
                     height: 200.0,
-                    child: TotalChart(),
+                    child: TotalChart(), // Removed const
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -62,7 +62,7 @@ class _CategoryFetcherState extends State<CategoryFetcher> {
                       ),
                     ],
                   ),
-                  const Expanded(child: CategoryList()),
+                  Expanded(child: CategoryList()), // Removed const
                 ],
               ),
             );

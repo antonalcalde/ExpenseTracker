@@ -5,7 +5,11 @@ import '../../screens/expense_screen.dart';
 
 class CategoryCard extends StatelessWidget {
   final ExpenseCategory category;
-  const CategoryCard(this.category, {super.key});
+  final int index; // Add index parameter
+  final List<Color> colors; // Add colors list parameter
+  final double percentage; // Add percentage parameter
+
+  const CategoryCard(this.category, this.index, this.colors, this.percentage, {super.key}); // Modify constructor
 
   @override
   Widget build(BuildContext context) {
@@ -25,21 +29,22 @@ class CategoryCard extends StatelessWidget {
         },
         leading: CircleAvatar(
           radius: 30,
-          backgroundColor: Theme.of(context).primaryColorLight,
+          backgroundColor: colors[index % colors.length], // Set background color from the color list
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Icon(
               category.icon,
               size: 30,
-              color: Theme.of(context).primaryColor,
+              color: Colors.white, // Use white color for contrast
             ),
           ),
         ),
         title: Text(
           category.title,
           style: const TextStyle(
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: FontWeight.bold,
+            letterSpacing: 0,
           ),
         ),
         subtitle: Text(
@@ -62,10 +67,18 @@ class CategoryCard extends StatelessWidget {
                 color: Colors.green,
               ),
             ),
+            Text(
+              '${percentage.toStringAsFixed(2)}%', // Display the percentage here
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
+            ),
             const SizedBox(height: 4),
             const Icon(
               Icons.arrow_forward_ios,
-              size: 16,
+              size: 12,
               color: Colors.grey,
             ),
           ],

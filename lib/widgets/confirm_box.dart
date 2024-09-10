@@ -22,7 +22,7 @@ class ConfirmBox extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).pop(false); // don't delete
             },
-            child: const Text('Don\'t delete'),
+            child: const Text('Cancel'),
           ),
           const SizedBox(width: 5.0),
           ElevatedButton(

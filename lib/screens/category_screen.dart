@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart'; // For date formatting
 import 'package:provider/provider.dart';
 import '../widgets/category_screen/category_fetcher.dart';
 import '../widgets/expense_form.dart';
@@ -17,26 +18,53 @@ class CategoryScreen extends StatefulWidget {
 class _CategoryScreenState extends State<CategoryScreen> {
   String _currentExpenseType = 'Today\'s Expenses';
   double _currentExpenseValue = 0.0;
+  String _currentExpenseDateRange = ''; // To display the date range
+  DateTime? _selectedDate; // To track the selected date
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateTime.now(); // Initialize with today's date
     _updateExpenseValue();
+  }
+
+  // Date Picker Function
+  Future<void> _pickDate() async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate ?? DateTime.now(),
+      firstDate: DateTime(2022),
+      lastDate: DateTime.now(),
+    );
+
+    if (pickedDate != null) {
+      setState(() {
+        _selectedDate = pickedDate;
+        _updateExpenseValue(); // Update the expense data after date selection
+      });
+    }
   }
 
   void _updateExpenseValue() {
     final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
-    final today = DateTime.now();
+    final today = _selectedDate ?? DateTime.now();
+    final dateFormatter = DateFormat('MMMM d, yyyy');
 
     setState(() {
       if (_currentExpenseType == 'Today\'s Expenses') {
         _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
+        _currentExpenseDateRange = dateFormatter.format(today); // Format for daily expenses
       } else if (_currentExpenseType == 'Weekly Expenses') {
+        final monday = today.subtract(Duration(days: today.weekday - 1)); // Get Monday of the current week
+        final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
         _currentExpenseValue = dbProvider.calculateWeekExpenses().fold(0.0, (sum, day) => sum + day['amount']);
+        _currentExpenseDateRange = '${dateFormatter.format(monday)} - ${dateFormatter.format(sunday)}'; // Format for weekly expenses
       } else if (_currentExpenseType == 'Monthly Expenses') {
         _currentExpenseValue = dbProvider.calculateMonthlyExpenses(today.month, today.year);
+        _currentExpenseDateRange = DateFormat('MMMM yyyy').format(today); // Format for monthly expenses
       } else if (_currentExpenseType == 'Yearly Expenses') {
         _currentExpenseValue = dbProvider.calculateYearlyExpenses(today.year);
+        _currentExpenseDateRange = today.year.toString(); // Format for yearly expenses
       }
     });
   }
@@ -88,6 +116,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
               builder: (context, dbProvider, child) {
                 return Row(
                   children: [
+                    // Display Expense Type and Value
                     Expanded(
                       child: GestureDetector(
                         onTap: _toggleExpenseType, // Toggle the expense type on tap
@@ -115,12 +144,28 @@ class _CategoryScreenState extends State<CategoryScreen> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              const SizedBox(height: 4), // Space between value and date range
+                              Text(
+                                _currentExpenseDateRange,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: Colors.grey,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16), // Add space between the container and button
+                    const SizedBox(width: 16), // Space between container and calendar icon
+                    // Calendar Icon for Date Picker
+                    IconButton(
+                      onPressed: _pickDate, // Opens the date picker
+                      icon: const Icon(Icons.calendar_today),
+                      tooltip: 'Pick a date',
+                    ),
+                    const SizedBox(width: 16), // Space between calendar icon and button
                     ElevatedButton(
                       onPressed: () {
                         showModalBottomSheet(

@@ -45,29 +45,49 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
   }
 
-  void _updateExpenseValue() {
-    final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
-    final today = _selectedDate ?? DateTime.now();
-    final dateFormatter = DateFormat('MMMM d, yyyy');
+void _updateExpenseValue() async {
+  final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
+  final today = _selectedDate ?? DateTime.now();
+  final dateFormatter = DateFormat('MMMM d, yyyy');
 
-    setState(() {
-      if (_currentExpenseType == 'Today\'s Expenses') {
-        _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
+  try {
+    if (_currentExpenseType == 'Today\'s Expenses') {
+      // Asynchronously fetch daily expenses
+      final dailyExpenses = await dbProvider.calculateDailyExpenses(today);
+      setState(() {
+        _currentExpenseValue = dailyExpenses;
         _currentExpenseDateRange = dateFormatter.format(today); // Format for daily expenses
-      } else if (_currentExpenseType == 'Weekly Expenses') {
-        final monday = today.subtract(Duration(days: today.weekday - 1)); // Get Monday of the current week
-        final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
-        _currentExpenseValue = dbProvider.calculateWeekExpenses().fold(0.0, (sum, day) => sum + day['amount']);
+      });
+    } else if (_currentExpenseType == 'Weekly Expenses') {
+      final monday = today.subtract(Duration(days: today.weekday - 1)); // Get Monday of the current week
+      final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
+
+      // Asynchronously fetch weekly expenses
+      final weeklyExpenses = await dbProvider.calculateWeekExpenses(monday); // Pass the start date (Monday)
+      setState(() {
+        _currentExpenseValue = weeklyExpenses;
         _currentExpenseDateRange = '${dateFormatter.format(monday)} - ${dateFormatter.format(sunday)}'; // Format for weekly expenses
-      } else if (_currentExpenseType == 'Monthly Expenses') {
-        _currentExpenseValue = dbProvider.calculateMonthlyExpenses(today.month, today.year);
+      });
+    } else if (_currentExpenseType == 'Monthly Expenses') {
+      // Asynchronously fetch monthly expenses
+      final monthlyExpenses = await dbProvider.calculateMonthlyExpenses(today.month, today.year);
+      setState(() {
+        _currentExpenseValue = monthlyExpenses;
         _currentExpenseDateRange = DateFormat('MMMM yyyy').format(today); // Format for monthly expenses
-      } else if (_currentExpenseType == 'Yearly Expenses') {
-        _currentExpenseValue = dbProvider.calculateYearlyExpenses(today.year);
+      });
+    } else if (_currentExpenseType == 'Yearly Expenses') {
+      // Asynchronously fetch yearly expenses
+      final yearlyExpenses = await dbProvider.calculateYearlyExpenses(today.year);
+      setState(() {
+        _currentExpenseValue = yearlyExpenses;
         _currentExpenseDateRange = today.year.toString(); // Format for yearly expenses
-      }
-    });
+      });
+    }
+  } catch (e) {
+    print('Error fetching expenses: $e');
   }
+}
+
 
   void _toggleExpenseType() {
     setState(() {

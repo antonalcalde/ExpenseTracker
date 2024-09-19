@@ -30,4 +30,6 @@ class Expense {
       amount: double.parse(value['amount']),
       date: DateTime.parse(value['date']),
       category: value['category']);
+
+  copyWith({required int id}) {}
 }

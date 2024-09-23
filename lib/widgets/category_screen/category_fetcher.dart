@@ -15,17 +15,24 @@ class CategoryFetcher extends StatefulWidget {
 class _CategoryFetcherState extends State<CategoryFetcher> {
   late Future _categoryList;
 
-  Future _getCategoryList() async {
-    final provider = Provider.of<DatabaseProvider>(context, listen: false);
+Future _getCategoryList() async {
+  try {
+    final provider = context.read<DatabaseProvider>();
     return await provider.fetchCategories();
+  } catch (e) {
+    print('Error fetching categories: $e');
+    return Future.error(e);
   }
+}
 
-  @override
-  void initState() {
-    super.initState();
-    // fetch the list and set it to _categoryList
-    _categoryList = _getCategoryList();
-  }
+@override
+void initState() {
+  super.initState();
+  // fetch the list and set it to _categoryList
+  _categoryList = _getCategoryList();
+  print('Fetching categories...');
+  context.read<DatabaseProvider>().fetchCategories();
+}
 
   @override
   Widget build(BuildContext context) {

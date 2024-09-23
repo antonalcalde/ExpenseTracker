@@ -26,24 +26,33 @@ class CategoryList extends StatelessWidget {
       builder: (_, db, __) {
         // Get the categories
         var list = db.categories;
-        var total = db.calculateTotalExpenses(); // Total expenses
-        return ListView.builder(
-          physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics()),
-          itemCount: list.length,
-          itemBuilder: (_, i) {
-            // Calculate percentage for each category
-            final double percentage = total == 0
-                ? 0
-                : (list[i].totalAmount / total) * 100;
-            
-            // Pass the category, index, color list, and percentage
-            return CategoryCard(
-              list[i], // category
-              i, // index
-              _colors, // colors list
-              percentage, // percentage value
-            );
+        return FutureBuilder(
+          future: db.calculateTotalExpenses(), // Total expenses
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              var total = snapshot.data; // total expenses
+              return ListView.builder(
+                physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics()),
+                itemCount: list.length,
+                itemBuilder: (_, i) {
+                  // Calculate percentage for each category
+                 final double percentage = total == 0
+                       ? 0
+                       : (list[i].totalAmount.toDouble() / total!) * 100;
+                  
+                  // Pass the category, index, color list, and percentage
+                  return CategoryCard(
+                    list[i], // category
+                    i, // index
+                    _colors, // colors list
+                    percentage, // percentage value
+                  );
+                },
+              );
+            } else {
+              return const Center(child: CircularProgressIndicator());
+            }
           },
         );
       },

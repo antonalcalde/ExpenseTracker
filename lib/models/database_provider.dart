@@ -14,8 +14,8 @@ class DatabaseProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  List<ExpenseCategory> _categories = [];
-  List<ExpenseCategory> get categories => _categories;
+List<ExpenseCategory> _categories = [];
+List<ExpenseCategory> get categories => _categories;
 
   List<Expense> _expenses = [];
   List<Expense> get expenses => _searchText.isNotEmpty
@@ -27,22 +27,52 @@ class DatabaseProvider with ChangeNotifier {
 
   double get totalExpenses => _categories.fold(0.0, (sum, item) => sum + item.totalAmount);
 
+  String _expenseType = 'Today\'s Expenses';
+
+  String get expenseType => _expenseType;
+
+  void updateExpenseType(String newType) {
+    _expenseType = newType;
+    notifyListeners(); // Notify the listeners that the expense type has changed
+  }
+
+Future<double> calculateTotalExpenses() async {
+  if (_expenseType == 'Today\'s Expenses') {
+    return calculateDailyExpenses(DateTime.now());
+  } else if (_expenseType == 'Weekly Expenses') {
+    final monday = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1)); // Get Monday of the current week
+    return calculateWeekExpenses(monday);
+  } else if (_expenseType == 'Monthly Expenses') {
+    return calculateMonthlyExpenses(DateTime.now().month, DateTime.now().year);
+  } else if (_expenseType == 'Yearly Expenses') {
+    return calculateYearlyExpenses(DateTime.now().year);
+  }
+  return 0.0; // Return a default value if none of the above conditions are met
+}
   // Base API URL (Change this to your Flask server address)
   final String apiUrl = 'http://10.0.2.2:5000';
 
   // Fetch all categories from Flask API
-  Future<List<ExpenseCategory>> fetchCategories() async {
+Future<List<ExpenseCategory>> fetchCategories() async {
+  try {
     final response = await http.get(Uri.parse('$apiUrl/categories'));
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
       _categories = List<ExpenseCategory>.from(data.map((item) => ExpenseCategory.fromString(item)));
+      print('Categories: $_categories');
       notifyListeners();
       return _categories;
+    } else if (response.statusCode == 404) {
+      throw Exception('Categories not found');
     } else {
-      throw Exception('Failed to load categories');
+      throw Exception('Failed to load categories: ${response.statusCode}');
     }
+  } catch (e) {
+    print('Error fetching categories: $e');
+    rethrow; // rethrow the exception so that it can be caught by the FutureBuilder
   }
+}
 
   // Add a new expense via Flask API
   Future<void> addExpense(Expense exp) async {
@@ -131,6 +161,7 @@ class DatabaseProvider with ChangeNotifier {
       throw Exception('Failed to update category');
     }
   }
+
   // Calculate daily expenses via Flask API
   Future<double> calculateDailyExpenses(DateTime date) async {
     final response = await http.get(
@@ -145,26 +176,26 @@ class DatabaseProvider with ChangeNotifier {
     }
   }
 
-// Calculate weekly expenses via Flask API
-Future<double> calculateWeekExpenses(DateTime startDate) async {
-  final monday = startDate.subtract(Duration(days: startDate.weekday - 1)); // Get Monday of the current week
-  final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
+  // Calculate weekly expenses via Flask API
+  Future<double> calculateWeekExpenses(DateTime startDate) async {
+    final monday = startDate.subtract(Duration(days: startDate.weekday - 1)); // Get Monday of the current week
+    final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
 
-  final response = await http.get(
-    Uri.parse(
-      '$apiUrl/expenses/weekly?startDate=${monday.toIso8601String()}&endDate=${sunday.toIso8601String()}',
-    ),
-  );
+    final response = await http.get(
+      Uri.parse(
+        '$apiUrl/expenses/weekly?startDate=${monday.toIso8601String()}&endDate=${sunday.toIso8601String()}',
+      ),
+    );
 
-  if (response.statusCode == 200) {
-    final data = json.decode(response.body);
-    return data['totalAmount'];
-  } else {
-    throw Exception('Failed to calculate weekly expenses');
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      return data['totalAmount'];
+    } else {
+      throw Exception('Failed to calculate weekly expenses');
+    }
   }
-}
 
-    // Calculate monthly expenses via Flask API
+  // Calculate monthly expenses via Flask API
   Future<double> calculateMonthlyExpenses(int month, int year) async {
     final response = await http.get(
       Uri.parse('$apiUrl/expenses/monthly?year=$year&month=$month'),
@@ -191,6 +222,7 @@ Future<double> calculateWeekExpenses(DateTime startDate) async {
       throw Exception('Failed to calculate yearly expenses');
     }
   }
+
   // Fetch all incomes from Flask API
   Future<List<Income>> fetchIncomes() async {
     final response = await http.get(Uri.parse('$apiUrl/incomes'));
@@ -234,12 +266,14 @@ Future<double> calculateWeekExpenses(DateTime startDate) async {
   }
 
   // Calculate net savings (locally based on fetched data)
-  double calculateNetSavings() {
-    return calculateTotalIncomes() - calculateTotalExpenses();
-  }
+Future<double> calculateNetSavings() async {
+  double totalIncomes = calculateTotalIncomes();
+  double totalExpenses = await calculateTotalExpenses(); // Wait for the Future to complete
+  return totalIncomes - totalExpenses;
+}
 
   // Calculate total expenses (locally)
-  double calculateTotalExpenses() {
+  double calculateTotalExpensesLocally() {
     return _categories.fold(0.0, (sum, item) => sum + item.totalAmount);
   }
 

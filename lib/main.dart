@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
+      home: CategoryScreen(), // Set the initial screen to CategoryScreen
       initialRoute: CategoryScreen.name,
       routes: {
         CategoryScreen.name: (_) => const CategoryScreen(),

@@ -16,7 +16,7 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  String _currentExpenseType = 'Today\'s Expenses';
+  String _currentExpenseType = 'Daily Expenses'; // Initialize with Daily Expenses
   double _currentExpenseValue = 0.0;
   String _currentExpenseDateRange = ''; // To display the date range
   DateTime? _selectedDate; // To track the selected date
@@ -45,44 +45,51 @@ class _CategoryScreenState extends State<CategoryScreen> {
     }
   }
 
-  void _updateExpenseValue() {
-    final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
-    final today = _selectedDate ?? DateTime.now();
-    final dateFormatter = DateFormat('MMMM d, yyyy');
+void _updateExpenseValue() {
+  final dbProvider = Provider.of<DatabaseProvider>(context, listen: false);
+  final today = _selectedDate ?? DateTime.now();
+  final dateFormatter = DateFormat('MMMM d, yyyy');
 
-    setState(() {
-      if (_currentExpenseType == 'Today\'s Expenses') {
-        _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
-        _currentExpenseDateRange = dateFormatter.format(today); // Format for daily expenses
-      } else if (_currentExpenseType == 'Weekly Expenses') {
-        final monday = today.subtract(Duration(days: today.weekday - 1)); // Get Monday of the current week
-        final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
-        _currentExpenseValue = dbProvider.calculateWeekExpenses().fold(0.0, (sum, day) => sum + day['amount']);
-        _currentExpenseDateRange = '${dateFormatter.format(monday)} - ${dateFormatter.format(sunday)}'; // Format for weekly expenses
-      } else if (_currentExpenseType == 'Monthly Expenses') {
-        _currentExpenseValue = dbProvider.calculateMonthlyExpenses(today.month, today.year);
-        _currentExpenseDateRange = DateFormat('MMMM yyyy').format(today); // Format for monthly expenses
-      } else if (_currentExpenseType == 'Yearly Expenses') {
-        _currentExpenseValue = dbProvider.calculateYearlyExpenses(today.year);
-        _currentExpenseDateRange = today.year.toString(); // Format for yearly expenses
-      }
-    });
-  }
+  setState(() {
+    if (_currentExpenseType == 'Daily Expenses') {
+      _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
+      _currentExpenseDateRange = dateFormatter.format(today); // Format for daily expenses
+    } else if (_currentExpenseType == 'Today\'s Expenses') {
+      _currentExpenseValue = dbProvider.calculateDailyExpenses(today);
+      _currentExpenseDateRange = dateFormatter.format(today); // Format for today's expenses
+    } else if (_currentExpenseType == 'Weekly Expenses') {
+      final monday = today.subtract(Duration(days: today.weekday - 1)); // Get Monday of the current week
+      final sunday = monday.add(const Duration(days: 6)); // Get Sunday of the current week
+      _currentExpenseValue = dbProvider.calculateWeekExpenses().fold(0.0, (sum, day) => sum + day['amount']);
+      _currentExpenseDateRange = '${dateFormatter.format(monday)} - ${dateFormatter.format(sunday)}'; // Format for weekly expenses
+    } else if (_currentExpenseType == 'Monthly Expenses') {
+      _currentExpenseValue = dbProvider.calculateMonthlyExpenses(today.month, today.year);
+      _currentExpenseDateRange = DateFormat('MMMM yyyy').format(today); // Format for monthly expenses
+    } else if (_currentExpenseType == 'Yearly Expenses') {
+      _currentExpenseValue = dbProvider.calculateYearlyExpenses(today.year);
+      _currentExpenseDateRange = today.year.toString(); // Format for yearly expenses
+    }
+  });
+}
 
-  void _toggleExpenseType() {
-    setState(() {
-      if (_currentExpenseType == 'Today\'s Expenses') {
-        _currentExpenseType = 'Weekly Expenses';
-      } else if (_currentExpenseType == 'Weekly Expenses') {
-        _currentExpenseType = 'Monthly Expenses';
-      } else if (_currentExpenseType == 'Monthly Expenses') {
-        _currentExpenseType = 'Yearly Expenses';
-      } else if (_currentExpenseType == 'Yearly Expenses') {
-        _currentExpenseType = 'Today\'s Expenses';
-      }
-      _updateExpenseValue();
-    });
-  }
+
+void _toggleExpenseType() {
+  setState(() {
+    if (_currentExpenseType == 'Daily Expenses') {
+      _currentExpenseType = 'Today\'s Expenses';
+    } else if (_currentExpenseType == 'Today\'s Expenses') {
+      _currentExpenseType = 'Weekly Expenses';
+    } else if (_currentExpenseType == 'Weekly Expenses') {
+      _currentExpenseType = 'Monthly Expenses';
+    } else if (_currentExpenseType == 'Monthly Expenses') {
+      _currentExpenseType = 'Yearly Expenses';
+    } else if (_currentExpenseType == 'Yearly Expenses') {
+      _currentExpenseType = 'Daily Expenses'; // Cycle back to Daily Expenses
+    }
+    _updateExpenseValue();
+  });
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -151,79 +158,77 @@ class _CategoryScreenState extends State<CategoryScreen> {
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
-                  child: Consumer<DatabaseProvider>(
-                    builder: (context, dbProvider, child) {
-                      return Row(
-                        children: [
-                          // Display Expense Type and Value
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: _toggleExpenseType, // Toggle the expense type on tap
-                              child: Container(
-                                padding: const EdgeInsets.all(8.0),
-                                decoration: BoxDecoration(
-                                  color: Colors.grey[200], // Light grey background
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      _currentExpenseType,
-                                      style: const TextStyle(
-                                        fontSize: 12, // Smaller font size
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                  child: Consumer<DatabaseProvider>(builder: (context, dbProvider, child) {
+                    return Row(
+                      children: [
+                        // Display Expense Type and Value
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _toggleExpenseType, // Toggle the expense type on tap
+                            child: Container(
+                              padding: const EdgeInsets.all(8.0),
+                              decoration: BoxDecoration(
+                                color: Colors.grey[200], // Light grey background
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _currentExpenseType,
+                                    style: const TextStyle(
+                                      fontSize: 12, // Smaller font size
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const SizedBox(height: 4), // Small space between the label and value
-                                    Text(
-                                      '₱ ${_currentExpenseValue.toStringAsFixed(2)}',
-                                      style: const TextStyle(
-                                        fontSize: 24, // Larger font size for the value
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  ),
+                                  const SizedBox(height: 4), // Small space between the label and value
+                                  Text(
+                                    '₱ ${_currentExpenseValue.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      fontSize: 24, // Larger font size for the value
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    const SizedBox(height: 4), // Space between value and date range
-                                    Text(
-                                      _currentExpenseDateRange,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.normal,
-                                        color: Colors.grey,
-                                      ),
+                                  ),
+                                  const SizedBox(height: 4), // Space between value and date range
+                                  Text(
+                                    _currentExpenseDateRange,
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.normal,
+                                      color: Colors.grey,
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             ),
                           ),
-                          const SizedBox(width: 16), // Space between container and calendar icon
-                          // Calendar Icon for Date Picker
-                          IconButton(
-                            onPressed: _pickDate, // Opens the date picker
-                            icon: const Icon(Icons.calendar_today),
-                            tooltip: 'Pick a date',
+                        ),
+                        const SizedBox(width: 16), // Space between container and calendar icon
+                        // Calendar Icon for Date Picker
+                        IconButton(
+                          onPressed: _pickDate, // Opens the date picker
+                          icon: const Icon(Icons.calendar_today),
+                          tooltip: 'Pick a date',
+                        ),
+                        const SizedBox(width: 16), // Space between calendar icon and button
+                        ElevatedButton(
+                          onPressed: () {
+                            showModalBottomSheet(
+                              context: context,
+                              isScrollControlled: true,
+                              builder: (_) => const ExpenseForm(),
+                            );
+                          },
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.all(10.0),
+                            shape: const CircleBorder(),
+                            backgroundColor: Colors.green, // Updated parameter
                           ),
-                          const SizedBox(width: 16), // Space between calendar icon and button
-                          ElevatedButton(
-                            onPressed: () {
-                              showModalBottomSheet(
-                                context: context,
-                                isScrollControlled: true,
-                                builder: (_) => const ExpenseForm(),
-                              );
-                            },
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.all(10.0),
-                              shape: const CircleBorder(),
-                              backgroundColor: Colors.green, // Updated parameter
-                            ),
-                            child: const Icon(Icons.add, color: Colors.white),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                          child: const Icon(Icons.add, color: Colors.white),
+                        ),
+                      ],
+                    );
+                  }),
                 ),
                 const Expanded(child: CategoryFetcher()), // Ensure this is expanded to take up available space
               ],
@@ -239,6 +244,11 @@ class _CategoryScreenState extends State<CategoryScreen> {
               child: Text('Settings Content'),
             ),
           ],
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: _toggleExpenseType, // Switch between expense types
+          tooltip: 'Switch Expense Type',
+          child: const Icon(Icons.swap_horiz), // Use any icon you prefer
         ),
       ),
     );

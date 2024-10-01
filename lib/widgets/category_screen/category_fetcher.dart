@@ -23,7 +23,7 @@ class _CategoryFetcherState extends State<CategoryFetcher> {
   @override
   void initState() {
     super.initState();
-    // fetch the list and set it to _categoryList
+    // Fetch the list and set it to _categoryList
     _categoryList = _getCategoryList();
   }
 
@@ -33,7 +33,7 @@ class _CategoryFetcherState extends State<CategoryFetcher> {
       future: _categoryList,
       builder: (_, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
-          // if connection is done then check for errors or return the result
+          // If connection is done then check for errors or return the result
           if (snapshot.hasError) {
             return Center(child: Text(snapshot.error.toString()));
           } else {
@@ -43,7 +43,7 @@ class _CategoryFetcherState extends State<CategoryFetcher> {
                 children: [
                   SizedBox(
                     height: 200.0,
-                    child: TotalChart(), // Removed const
+                    child: TotalChart(expenseType: 'Today\'s Expenses'), // Pass the required expenseType here
                   ),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,

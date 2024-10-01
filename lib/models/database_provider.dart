@@ -38,7 +38,7 @@ class DatabaseProvider with ChangeNotifier {
   Database? _database;
   Future<Database> get database async {
     final dbDirectory = await getDatabasesPath();
-    const dbName = 'expense_tc.db';
+    const dbName = 'expense_tc2.db';
     final path = join(dbDirectory, dbName);
 
     _database = await openDatabase(
@@ -221,62 +221,58 @@ class DatabaseProvider with ChangeNotifier {
     );
   }
 
-  List<Map<String, dynamic>> calculateWeekExpenses() {
-    List<Map<String, dynamic>> data = [];
+List<Map<String, dynamic>> calculateWeekExpenses() {
+  List<Map<String, dynamic>> data = [];
+  
+  // Create a map to hold totals for each day
+  Map<DateTime, double> weeklyTotals = {};
 
+  for (int i = 0; i < 7; i++) {
+    final weekDay = DateTime.now().subtract(Duration(days: i));
+    weeklyTotals[weekDay] = 0.0; // Initialize the total for each day
+  }
+
+  for (var expense in _expenses) {
+    // Assuming expense.date is of type DateTime
     for (int i = 0; i < 7; i++) {
-      double total = 0.0;
       final weekDay = DateTime.now().subtract(Duration(days: i));
-
-      for (int j = 0; j < _expenses.length; j++) {
-        if (_expenses[j].date.year == weekDay.year &&
-            _expenses[j].date.month == weekDay.month &&
-            _expenses[j].date.day == weekDay.day) {
-          total += _expenses[j].amount;
-        }
+      if (expense.date.year == weekDay.year &&
+          expense.date.month == weekDay.month &&
+          expense.date.day == weekDay.day) {
+        weeklyTotals[weekDay] = weeklyTotals[weekDay]! + expense.amount;
       }
-
-      data.add({'day': weekDay, 'amount': total});
     }
-    return data;
   }
 
-  // Method to calculate daily expenses
-  double calculateDailyExpenses(DateTime date) {
-    double total = 0.0;
-    final dayExpenses = _expenses.where((expense) =>
-        expense.date.year == date.year &&
-        expense.date.month == date.month &&
-        expense.date.day == date.day);
+  // Convert map to list
+  weeklyTotals.forEach((day, amount) {
+    data.add({'day': day, 'amount': amount});
+  });
 
-    for (final expense in dayExpenses) {
-      total += expense.amount;
-    }
-    return total;
-  }
+  return data;
+}
 
-  // Method to calculate monthly expenses
-  double calculateMonthlyExpenses(int month, int year) {
-    double total = 0.0;
-    final monthExpenses = _expenses.where((expense) =>
-        expense.date.year == year && expense.date.month == month);
+// Method to calculate daily expenses
+double calculateDailyExpenses(DateTime date) {
+  return _expenses.where((expense) =>
+      expense.date.year == date.year &&
+      expense.date.month == date.month &&
+      expense.date.day == date.day)
+      .fold(0.0, (total, expense) => total + expense.amount);
+}
 
-    for (final expense in monthExpenses) {
-      total += expense.amount;
-    }
-    return total;
-  }
+// Method to calculate monthly expenses
+double calculateMonthlyExpenses(int month, int year) {
+  return _expenses.where((expense) =>
+      expense.date.year == year && expense.date.month == month)
+      .fold(0.0, (total, expense) => total + expense.amount);
+}
 
-  // Method to calculate yearly expenses
-  double calculateYearlyExpenses(int year) {
-    double total = 0.0;
-    final yearExpenses = _expenses.where((expense) => expense.date.year == year);
-
-    for (final expense in yearExpenses) {
-      total += expense.amount;
-    }
-    return total;
-  }
+// Method to calculate yearly expenses
+double calculateYearlyExpenses(int year) {
+  return _expenses.where((expense) => expense.date.year == year)
+      .fold(0.0, (total, expense) => total + expense.amount);
+}
 
   Future<void> addIncome(Income income) async {
     final db = await database;

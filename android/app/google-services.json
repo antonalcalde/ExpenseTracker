@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "236238591889",
+    "project_id": "wealthcast-1efa1",
+    "storage_bucket": "wealthcast-1efa1.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:236238591889:android:1aa0973356680eeba3ac30",
+        "android_client_info": {
+          "package_name": "com.example.expense_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtYrX0Huy8BHre9hD8iyapPYGEMtG8aQg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
